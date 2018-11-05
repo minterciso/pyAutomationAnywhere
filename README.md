@@ -53,4 +53,11 @@ executing better.
 While I was developing this simple Python module, Automation Anywhere released
 the v11 of it's software. It has a lot of new and shiny things, however I wasn't
 able to test it so far. That basically means that this *should* work, but I'll 
-never guarantee it, until I've tested it. 
+never guarantee it, until I've tested it.
+
+## Todo
+While I don't have a timeline (remember I'm *pro bono* here) there's a few things
+I want to do (in no specific order):
+* Test on v11
+* Create a full Python Package
+* Increase the ease of use of this module 
