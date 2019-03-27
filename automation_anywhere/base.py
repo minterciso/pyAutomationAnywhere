@@ -95,15 +95,32 @@ class Executor:
                                               filename=fname
                                               )
         else:
-            query = 'select trd.Id as id from TaskRunDetails trd where ' \
-                    'trd.Id in ({ids}) ' \
-                    'and IsTaskExecutionCompleted=0 and StartTime is not NULL'.format(ids=','.join([str(x) for x in cache]))
+            cache.sort(reverse=True)
         try:
             task_id = -1
             while task_id < 0:
+                query = 'select trd.Id as id from TaskRunDetails trd where ' \
+                        'trd.Id in ({ids}) ' \
+                        'and IsTaskExecutionCompleted=0 and StartTime is not NULL'.format(ids=','.join([str(x) for x in cache]))
                 row = self.__database_conn.execute(query).fetchone()
                 if row is not None:
                     task_id = row['id']
+                else:
+                    # Maybe the task finished already, without using the cache, check for this
+                    query = 'select trd.Id as id from TaskRunDetails trd , Tasks t, Clients c, Users u where ' \
+                            'trd.TaskId=t.id and trd.ClientId=c.id and trd.UserId=u.id and ' \
+                            'u.UserName=\'{username}\' and c.HostName=\'{client}\' and t.FileName=\'{filename}\' ' \
+                            'and trd.IsTaskExecutionCompleted=1 and trd.Id > {task_id} ' \
+                            'order by Id desc'.format(username=self.__username,
+                                                      client=client,
+                                                      filename=fname,
+                                                      task_id=cache[0]
+                                                      )
+                    # self.__logger.debug(query)
+                    row = self.__database_conn.execute(query).fetchone()
+                    # self.__logger.debug(row)
+                    if row is not None:
+                        task_id = row['id']
             return task_id
         except Exception as error:
             self.__logger.error('Unable to execute query {query}:{err}'.format(query=query, err=error))
@@ -163,8 +180,8 @@ class Executor:
         deploy_json = json.dumps(deploy_data)
         # Get the "cache" before executing the task
         cache = None
-        if self.__check_status:
-            cache = self.__get_task_cache(task, client)
+        # if self.__check_status:
+        #     cache = self.__get_task_cache(task, client)
         try:
             r = requests.post(self.__url + '/' + self.__api['deployment'], data=deploy_json, headers=deploy_headers)
         except Exception as error:
@@ -178,6 +195,7 @@ class Executor:
             self.__logger.info('Description: %s', r.text)
             raise errors.Error(r.reason)
         if self.__check_status:
+            cache = self.__get_task_cache(task, client)
             self.__logger.info('Getting task status...')
             task_id = -1
             while task_id < 0:
