@@ -48,6 +48,9 @@ class Executor:
         self.__database_conn = None
 
     def __connect_to_database(self):
+        """
+        Simply connects to the database.
+        """
         if self.__database_conn is not None:
             return
         try:
@@ -62,6 +65,13 @@ class Executor:
             raise
 
     def __get_task_cache(self, task: str, client: str):
+        """
+        It seems that there's a kind of cache when it starts a new task. Get all the IDs that are possible to be used by this cache
+
+        :param task: The task name as passed to the API
+        :param client: The client that the task is suposed to run
+        :return: A list of IDs that can be used as cache
+        """
         fname = task.split('\\')[-1]
         self.__logger.debug('Looking for cache for task \'{fname}\''.format(fname=fname))
         query = 'select trd.Id as id from TaskRunDetails trd, Tasks t, Clients c, Users u where	' \
@@ -84,6 +94,18 @@ class Executor:
             raise
 
     def __get_task_id(self, task: str, client: str, cache: list = None):
+        """
+        Tries to get the task id. This is by far the most complex method for this. It seems that on the Automation Anywhere v10.5 there's a kind of
+        "cache" to try to expedite the task execution. So every time a task starts via the API, a new line on the TaskRunDetails table is created, the
+        strange part is that sometimes this line is not used, and sometimes it is. It seems that it is used when the task takes some time to execute
+        (ie: more then 5 seconds), and it's not used when it's actually a really fast task. So basically we keep querying the cache and, if the cache
+        hasn't any update, we query anything with the ID bigger than the cache. If there's no cache however, we make a simple query and return it's id
+
+        :param task: The task name, as passed on the API to start
+        :param client: The client name
+        :param cache: A list with the cache ids
+        :return:
+        """
         fname = task.split('\\')[-1]
         if cache is not None:
             cache.sort(reverse=True)
@@ -135,6 +157,12 @@ class Executor:
                 raise
 
     def __get_task_status(self, task_id: int):
+        """
+        Get's the task status, via the passed task id.
+
+        :param task_id: The task id to query status from
+        :return: A dictionary with 'status','complete' and 'error' keys.
+        """
         query = 'select trd.Status as status, trd.IsTaskExecutionCompleted as completed, trd.ErrorMessage as error ' \
                 'from TaskRunDetails trd ' \
                 'where trd.Id={t_id}'.format(t_id=task_id)
@@ -152,6 +180,12 @@ class Executor:
             raise
 
     def set_check_status(self, check: bool):
+        """
+        Set's the check status and, if wanted it'll check on the database (of v10.5) for the task status
+
+        :param check: True or False, if True it'll connect to the database using the database_options param
+        :return:
+        """
         if check:
             self.__connect_to_database()
             self.__check_status = True
