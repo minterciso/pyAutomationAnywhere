@@ -45,19 +45,28 @@ class Executor:
             'username': None,
             'password': None
         }
+        self.automation_anywhere_version = 'v10'
+        self.task_status={
+            'status': None,
+            'complete': None,
+            'error': None
+        }
         self.__database_conn = None
 
     def __connect_to_database(self):
         """
         Simply connects to the database.
         """
+        # Prevents execution if we are in a different version than v10 of Automation Anywhere Control Room
+        if self.automation_anywhere_version != 'v10':
+            return -1
         if self.__database_conn is not None:
             return
         try:
-            db_connection = 'mssql+pyodbc://{username}:{password}@{hostname}'.format(
+            db_connection = 'mssql+pyodbc://{username}:{password}@{dsn}'.format(
                 username=self.database_options['username'],
                 password=self.database_options['password'],
-                hostname=self.database_options['DSN']
+                dsn=self.database_options['DSN']
             )
             self.__database_conn = sqlalchemy.create_engine(db_connection)
         except Exception as error:
@@ -72,6 +81,9 @@ class Executor:
         :param client: The client that the task is suposed to run
         :return: A list of IDs that can be used as cache
         """
+        # Prevents execution if we are in a different version than v10 of Automation Anywhere Control Room
+        if self.automation_anywhere_version != 'v10':
+            return -1
         fname = task.split('\\')[-1]
         self.__logger.debug('Looking for cache for task \'{fname}\''.format(fname=fname))
         query = 'select trd.Id as id from TaskRunDetails trd, Tasks t, Clients c, Users u where	' \
@@ -104,8 +116,11 @@ class Executor:
         :param task: The task name, as passed on the API to start
         :param client: The client name
         :param cache: A list with the cache ids
-        :return:
+        :return: The task ID created on the Automation Anywhere Control Room
         """
+        # Prevents execution if we are in a different version than v10 of Automation Anywhere Control Room
+        if self.automation_anywhere_version != 'v10':
+            return -1
         fname = task.split('\\')[-1]
         if cache is not None:
             cache.sort(reverse=True)
@@ -163,6 +178,9 @@ class Executor:
         :param task_id: The task id to query status from
         :return: A dictionary with 'status','complete' and 'error' keys.
         """
+        # Prevents execution if we are in a different version than v10 of Automation Anywhere Control Room
+        if self.automation_anywhere_version != 'v10':
+            return -1
         query = 'select trd.Status as status, trd.IsTaskExecutionCompleted as completed, trd.ErrorMessage as error ' \
                 'from TaskRunDetails trd ' \
                 'where trd.Id={t_id}'.format(t_id=task_id)
@@ -184,11 +202,16 @@ class Executor:
         Set's the check status and, if wanted it'll check on the database (of v10.5) for the task status
 
         :param check: True or False, if True it'll connect to the database using the database_options param
-        :return:
         """
         if check:
             self.__connect_to_database()
             self.__check_status = True
+            if self.automation_anywhere_version != 'v10':
+                self.__logger.info('Currently task status check is only supported on version 10.')
+                self.__logger.info(
+                    'You configured the version to be \'{version}\'.'.format(version=self.automation_anywhere_version))
+                self.__check_status = False
+                return
         else:
             self.__check_status = False
             self.__database_conn = None
@@ -220,8 +243,6 @@ class Executor:
             'X-Authorization': self.__auth_info['request_token']
         }
         deploy_json = json.dumps(deploy_data)
-        # Get the "cache" before executing the task
-        cache = None
         try:
             r = requests.post(self.__url + '/' + self.__api['deployment'], data=deploy_json, headers=deploy_headers)
         except Exception as error:
@@ -235,6 +256,8 @@ class Executor:
             self.__logger.info('Description: %s', r.text)
             raise errors.Error(r.reason)
         if self.__check_status:
+            # Get the "cache" of tasks
+            cache = None
             cache = self.__get_task_cache(task, client)
             self.__logger.info('Getting task status...')
             task_id = -1

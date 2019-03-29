@@ -66,7 +66,12 @@ If you want to, here's an example on how to use it
             'password': 'password'
         }
         aa.set_check_status(True)
-        aa.deploy_task(task='My Tasks\\Task1.atmx', client='BOTRUNNER01')
+        if aa.deploy_task(task='My Tasks\\Task1.atmx', client='BOTRUNNER01') is False:
+            logging.info('Task deploy or execution failed!')
+        logging.info('Task return information:')
+        logging.info('Status  : {status}'.format(status=aa.task_status['status']))
+        logging.info('Complete: {complete}'.format(complete=aa.task_status['complete']))
+        logging.info('Error   : {error}'.format(error=aa.task_status['error']))
     except Exception as error:
         print(error)
         raise
