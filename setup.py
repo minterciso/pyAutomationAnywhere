@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="pyAutomationAnywhere-minterciso",
+    name="automation_anywhere",
     version="0.0.1",
     author="Mateus Interciso",
     author_email="minterciso@gmail.com",
