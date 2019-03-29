@@ -41,7 +41,7 @@ class Executor:
         self.__logger = logging.getLogger()
         self.__check_status = False
         self.database_options = {
-            'hostname': None,
+            'DSN': None,
             'username': None,
             'password': None
         }
@@ -57,7 +57,7 @@ class Executor:
             db_connection = 'mssql+pyodbc://{username}:{password}@{hostname}'.format(
                 username=self.database_options['username'],
                 password=self.database_options['password'],
-                hostname=self.database_options['hostname']
+                hostname=self.database_options['DSN']
             )
             self.__database_conn = sqlalchemy.create_engine(db_connection)
         except Exception as error:
