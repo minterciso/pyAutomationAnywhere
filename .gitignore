@@ -103,3 +103,4 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+automation_anywhere/AA360_tests.ipynb

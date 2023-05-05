@@ -1,9 +1,4 @@
-class Error(Exception):
-    """
-    This class defines the Automation Anywhere API Error Exception
-
-    :param message: The message to show as an error
-    """
-
-    def __init__(self, message):
-        self.message = message
+class AuthenticationError(Exception):
+    """This class is responsible for showing authentication errors."""
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
