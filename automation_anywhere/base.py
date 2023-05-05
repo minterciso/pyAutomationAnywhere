@@ -1,6 +1,6 @@
 from requests import post, get
 
-from errors import AuthenticationError
+from automation_anywhere.errors import AuthenticationError
 
 
 class Base:
