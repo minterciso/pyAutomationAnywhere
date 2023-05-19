@@ -149,3 +149,59 @@ class Executor(Base):
             error = f'Unknown error: {response.text}'
 
         return success, error, deployment_id, automation_name
+
+    def status(self, deploy_id: str = None, deploy_name: str = None, filter: dict = None, sort: list = None, page: dict = None) -> tuple[bool, str, dict]:
+        """Check the status of an executed deploy. You can pass either deployment id or deployment name (if both are passed, it'll filter with all parameters), or any custom filter.
+
+        :param deploy_id: The deployment id to search, defaults to None
+        :type deploy_id: str, optional
+        :param deploy_name: The deployment name to search, defaults to None
+        :type deploy_name: str, optional
+        :param filter: A custom filter to search, defaults to None
+        :type filter: dict, optional
+        :param sort: Sorting information, defaults to None
+        :type sort: list, optional
+        :param page: Paging information, defaults to None
+        :type page: dict, optional
+        :return: A tuple with success, an error message (if any) and the complete result from the activity/list endpoint
+        :rtype: tuple[bool, str, dict]
+        """
+        success = False
+        error = None
+        return_data = dict()
+        local_filter = {
+            'operator': 'and',
+            'operands': list()
+            }
+        if deploy_id:
+            local_filter['operands'].append({
+                'operator': 'eq',
+                'field': 'deploymentId',
+                'value': deploy_id
+            })
+        if deploy_name:
+            local_filter['operands'].append({
+                'operator': 'eq',
+                'field': 'automationName',
+                'value': deploy_name
+            })
+        payload = {
+            'filter': filter if filter else local_filter,
+            'page': page,
+            'sort': sort
+        }        
+        endpoint = f'{self._base_url}v3/activity/list'
+        response = post(url=endpoint, headers=self.headers, json=payload)
+        if response.status_code == 200:
+            return_data['executions'] = response.json()['list']
+            return_data['page'] = response.json()['page']
+        elif response.status_code == 400:
+            error = f'Bad Request - {response.json()["code"]}: {response.json()["message"]}'
+        elif response.status_code == 401:
+            error = f'Authentication Error - {response.json()["code"]}: {response.json()["message"]}'
+        elif response.status_code == 404:
+            error = f'Not Found - {response.json()["message"]}'
+        else:
+            error = f'Unknown error: {response.text}'
+        return success, error, return_data
+    
