@@ -203,5 +203,6 @@ class Executor(Base):
             error = f'Not Found - {response.json()["message"]}'
         else:
             error = f'Unknown error: {response.text}'
+        success = True
         return success, error, return_data
     
