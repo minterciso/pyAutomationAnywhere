@@ -195,6 +195,7 @@ class Executor(Base):
         if response.status_code == 200:
             return_data['executions'] = response.json()['list']
             return_data['page'] = response.json()['page']
+            success = True
         elif response.status_code == 400:
             error = f'Bad Request - {response.json()["code"]}: {response.json()["message"]}'
         elif response.status_code == 401:
@@ -203,6 +204,5 @@ class Executor(Base):
             error = f'Not Found - {response.json()["message"]}'
         else:
             error = f'Unknown error: {response.text}'
-        success = True
         return success, error, return_data
     
