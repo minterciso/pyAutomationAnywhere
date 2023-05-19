@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name="automation_anywhere"
-version="2.0.0"
+version="2.1.0"
 authors=[{name="Mateus Interciso", email="minterciso@gmail.com"}]
 description="A Python Package to deploy tasks on Automation Anywhere 360"
 readme="README.md"
