@@ -5,15 +5,18 @@ from automation_anywhere.errors import AuthenticationError
 
 class Base:
     """This class is responsible for handling authentication on the AA360 cloud environment, and can help with more specific tasks."""
-    def __init__(self, base_url: str):
+    def __init__(self, base_url: str, verify_ssl: bool = True):
         """Initialize the class.
 
         :param base_url: The AA360 Orchestrator URL
         :type base_url: str
+        :param ignore_ssl: If set to False, it'll ignore the SSL on the requests, defaults to True
+        :type ignore_ssl: bool, optional
         """
         self.token = None
         self.user_info = None
         self.headers = None
+        self._verify_ssl = verify_ssl
         self._base_url = base_url
 
     def authenticate(self, username: str, password: str, multiple_login: bool = False) -> tuple[bool, str]:
@@ -36,7 +39,7 @@ class Base:
             'password': password,
             'multiLogin': multiple_login
         }
-        response = post(url=endpoint, json=payload)
+        response = post(url=endpoint, json=payload, verify=self._verify_ssl)
         if response.status_code == 200:
             self.token = response.json()['token']
             self.user_info = response.json()['user']
@@ -58,7 +61,7 @@ class Base:
         error = None
         endpoint = f'{self._base_url}v1/authentication/token'
         query = {'token': self.token}
-        response = get(url=endpoint, params=query)
+        response = get(url=endpoint, params=query, verify=self._verify_ssl)
         if response.status_code == 200:
             status = response.json()['valid']
         else:
@@ -77,7 +80,7 @@ class Base:
         payload = {
             'token': self.token
         }
-        response = post(url=endpoint, json=payload)
+        response = post(url=endpoint, json=payload, verify=self._verify_ssl)
         if response.status_code == 200:
             success = True
             self.token = response.json()['token']
@@ -95,7 +98,7 @@ class Base:
         success = False
         error = None
         endpoint = f'{self._base_url}v1/authentication/logout'
-        response = post(url=endpoint, headers=self.headers)
+        response = post(url=endpoint, headers=self.headers, verify=self._verify_ssl)
         if response.status_code == 204:
             success = True
         else:

@@ -5,7 +5,7 @@ from automation_anywhere.errors import AuthenticationError
 
 class Executor(Base):
     """Class used to deploy (and hopefully execute) a bot on the AA360 control room"""
-    def __init__(self, base_url: str, username: str, password: str, multiple_logins: bool = False):
+    def __init__(self, base_url: str, username: str, password: str, multiple_logins: bool = False, verify_ssl: bool = True):
         """The constructor.
 
         :param base_url: The AA360 ControlRoom URL.
@@ -15,10 +15,12 @@ class Executor(Base):
         :param password: The password to authenticate the user.
         :type password: str
         :param multiple_logins: If the user can and should have multiple logins, set to True, defaults to False
+        :param ignore_ssl: If set to False, it'll ignore the SSL on the requests, defaults to True
+        :type ignore_ssl: bool, optional
         :type multiple_logins: bool, optional
         :raises AuthenticationError: If there was an issue authenticating, it'll raise an AuthenticationError Exception
         """
-        super().__init__(base_url=base_url)
+        super().__init__(base_url=base_url, verify_ssl=verify_ssl)
         success, error = self.authenticate(
             username=username, password=password, multiple_login=multiple_logins)
         if success is False:
@@ -42,7 +44,7 @@ class Executor(Base):
         payload['page'] = page
         payload['sort'] = sort if sort is not None else [
             {'field': 'username', 'direction': 'asc'}]
-        response = post(url=endpoint, headers=self.headers, json=payload)
+        response = post(url=endpoint, headers=self.headers, json=payload, verify=self._verify_ssl)
         if response.status_code == 200:
             page_data = response.json()['page']
             devices = response.json()['list']
@@ -90,7 +92,7 @@ class Executor(Base):
             }
         else:
             payload['filter'] = filter
-        response = post(url=endpoint, json=payload, headers=self.headers)
+        response = post(url=endpoint, json=payload, headers=self.headers, verify=self._verify_ssl)
         if response.status_code == 200:
             page_data = response.json()['page']
             automations = response.json()['list']
@@ -134,7 +136,7 @@ class Executor(Base):
         payload['callBackInfo'] = call_back_info
         payload['botInput'] = bot_input
         payload['overrideDefaultDevice'] = override_default_device
-        response = post(url=endpoint, json=payload, headers=self.headers)
+        response = post(url=endpoint, json=payload, headers=self.headers, verify=self._verify_ssl)
         if response.status_code == 200:
             deployment_id = response.json()['deploymentId']
             automation_name = response.json()['automationName']
@@ -191,7 +193,7 @@ class Executor(Base):
             'sort': sort
         }        
         endpoint = f'{self._base_url}v3/activity/list'
-        response = post(url=endpoint, headers=self.headers, json=payload)
+        response = post(url=endpoint, headers=self.headers, json=payload, verify=self._verify_ssl)
         if response.status_code == 200:
             return_data['executions'] = response.json()['list']
             return_data['page'] = response.json()['page']
