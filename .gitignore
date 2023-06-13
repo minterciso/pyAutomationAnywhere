@@ -105,3 +105,6 @@ venv.bak/
 .mypy_cache/
 automation_anywhere/AA360_tests.ipynb
 pyproject.toml
+test.ipynb
+.swm/swimm.json
+.swm/untitled-doc.pysjuns4.sw.md
