@@ -24,7 +24,7 @@ As is, for the version 360, you can use the package to deploy a task as such:
     username = 'your-username'
     password = 'your-password'
     aa_executor = Executor(base_url, username, password)
-    devices, _, error = aa_executor.list_devices()
+    devices, _, error = aa_executor.list_devices(hostname='host', run_as_user='user_to_run_as')
     if error is not None:
       # handle the error
       pass
@@ -32,12 +32,12 @@ As is, for the version 360, you can use the package to deploy a task as such:
     if error is not None:
       # handle the error
       pass
-    # Get the device id to execute, we'll just get the first one
-    device_id = int(devices[0]['id'])
+    # Get the run as user id to execute, we'll just get the first one
+    users_ids = int(devices[0]['defaultUsers'][0]['id'])
     # Get the automation id to execute, we'll just get the first one
     automation_id = int(automations[0]['id'])
     # Deploy
-    success, error, deployment_id, deployment_name = aa_executor.deploy(automation_id, [device_id])
+    success, error, deployment_id, deployment_name = aa_executor.deploy(automation_id, [users_ids])
     if success:
       # handle the error
       pass
@@ -57,14 +57,14 @@ I found an endpoint where you can get the job execution status, by filtering it 
     username = 'your-username'
     password = 'your-password'
     deploy_id = '377b04a5-fa8b-4e4a-8db5-8d769fd6639b'
-    deploy_name = 'Test.2023.05.19.17.28.51.minterciso@deloitte.com'
+    deploy_name = 'Test.2023.05.19.17.28.51.test@test.com'
     aa_executor = Executor(base_url, username, password)
     success, error, data = aa_executor.status(deploy_id=deploy_id)
 
 And the dictionary output:
 
     [{'automationId': '',
-    'automationName': 'Test.2023.05.19.17.28.51.minterciso@deloitte.com',
+    'automationName': 'Test.2023.05.19.17.28.51.test@test.com',
     'automationPriority': 'PRIORITY_MEDIUM',
     'botLabel': '',
     'callbackInfo': '',
@@ -95,7 +95,7 @@ And the dictionary output:
     'totalLines': 1,
     'type': 'RUN_NOW',
     'userId': '41',
-    'userName': 'minterciso@deloitte.com',
+    'userName': 'test@test.com',
     'usingRdp': False}]
 
 Basically it's a list with all executions found with the filter, and all their status.

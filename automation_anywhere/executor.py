@@ -21,33 +21,52 @@ class Executor(Base):
         :raises AuthenticationError: If there was an issue authenticating, it'll raise an AuthenticationError Exception
         """
         super().__init__(base_url=base_url, verify_ssl=verify_ssl)
-        success, error = self.authenticate(
-            username=username, password=password, multiple_login=multiple_logins)
+        success, error = self.authenticate(username=username, password=password, multiple_login=multiple_logins)
         if success is False:
             raise AuthenticationError(error)
 
-    def list_devices(self, sort: list = None, page: dict = None) -> tuple[list, dict, str]:
+    def list_devices(self, sort: list = None, page: dict = None, run_as_user: str = None, hostname: str = None, custom_filter: dict = None,) -> tuple[list, dict, str]:
         """List all devices that can execute something. You need the user id of the device in order to execute something.
 
         :param sort: If set, it's a list that executes the sorting, defaults to None
         :type sort: list, optional
         :param page: If set, a dictionary with page parameters to add on the payload, defaults to None
         :type page: dict, optional
+        :param run_as_user: If configured, it'll search for the exact username on the "defaultUsers" list, in order to filter it, defaults to None
+        :type run_as_user: str, optional
+        :param hostname: If configured, it'll search for the hostname (as a substring) on all the devices the user has permission to see, defaults to None
+        :type hostname: str, optional
+        :param custom_filter: If sent, it'll add to the other filters on the query, defaults to None
+        :type custom_filter: dict, optional
         :return: A tuple with a list of devices, a list of page data and a string to show errors
         :rtype: tuple[list, dict, str]
         """
         devices = None
         page_data = None
         error = None
-        endpoint = f'{self._base_url}v1/devices/runasusers/list'
+        endpoint = f'{self._base_url}v2/devices/list'
         payload = dict()
         payload['page'] = page
-        payload['sort'] = sort if sort is not None else [
-            {'field': 'username', 'direction': 'asc'}]
+        payload['sort'] = sort if sort is not None else [{'field': 'id', 'direction': 'asc'}]
+        local_filter = {'operator': 'and', 'operands': []}
+        if hostname:
+            local_filter['operands'].append({'operator': 'substring', 'field': 'hostName', 'value': hostname})
+        if custom_filter:
+            local_filter['operands'].append(custom_filter)
         response = post(url=endpoint, headers=self.headers, json=payload, verify=self._verify_ssl)
         if response.status_code == 200:
             page_data = response.json()['page']
             devices = response.json()['list']
+            if run_as_user:
+                found_devices = list()
+                for device in devices:
+                    found_users = next((x for x in device['defaultUsers'] if x['username'] == run_as_user), None)
+                    if found_users:
+                        found_devices.append(device.copy())
+                        found_devices[-1]['defaultUsers'] = [found_users]
+            del devices
+            devices = found_devices.copy()
+
         elif response.status_code == 400:
             error = f'Bad Request - {response.json()["code"]}: {response.json()["message"]}'
         elif response.status_code == 401:
