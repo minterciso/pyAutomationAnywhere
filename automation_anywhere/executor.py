@@ -215,7 +215,11 @@ class Executor(Base):
         response = post(url=endpoint, headers=self.headers, json=payload, verify=self._verify_ssl)
         if response.status_code == 200:
             return_data['executions'] = response.json()['list']
-            return_data['page'] = response.json()['page']
+            try:
+                return_data['page'] = response.json()['page']
+            except IndexError:
+                # Sometimes, page is still not showing, so return an empty page
+                return_data['page'] = list()
             success = True
         elif response.status_code == 400:
             error = f'Bad Request - {response.json()["code"]}: {response.json()["message"]}'
