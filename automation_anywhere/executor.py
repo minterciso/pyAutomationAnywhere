@@ -217,7 +217,7 @@ class Executor(Base):
             return_data['executions'] = response.json()['list']
             try:
                 return_data['page'] = response.json()['page']
-            except IndexError:
+            except KeyError:
                 # Sometimes, page is still not showing, so return an empty page
                 return_data['page'] = list()
             success = True
