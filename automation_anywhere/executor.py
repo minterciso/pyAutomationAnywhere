@@ -38,7 +38,7 @@ class Executor(Base):
         :type hostname: str, optional
         :param custom_filter: If sent, it'll add to the other filters on the query, defaults to None
         :type custom_filter: dict, optional
-        :return: A tuple with a list of devices, a list of page data and a string to show errors
+        :return: A tuple with a list of devices, a list of page data and a string to show errors. The list of page data may be None sometimes.
         :rtype: tuple[list, dict, str]
         """
         devices = None
@@ -55,7 +55,11 @@ class Executor(Base):
             local_filter['operands'].append(custom_filter)
         response = post(url=endpoint, headers=self.headers, json=payload, verify=self._verify_ssl)
         if response.status_code == 200:
-            page_data = response.json()['page']
+            try:
+                # Sometimes the 'page' is missing from the AA Return, so just check for them
+                page_data = response.json()['page']
+            except KeyError:
+                page_data = None
             devices = response.json()['list']
             if run_as_user:
                 found_devices = list()
